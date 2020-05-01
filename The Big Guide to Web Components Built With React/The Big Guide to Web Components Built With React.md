@@ -4,11 +4,11 @@ Our team at WTW wanted to find a way to deploy multiple small applications to th
 
 We researched a lot of different way of handling this problem, but finally landed on utilizing Web Components as our solution. This allows us to deploy individual, isolated Javascript applications together on a single page without much responsibility on other teams to expend a lot of work to integrate those components.
 
-The primary web technology our shop uses is React, so using React with our Web Components decision was a primary need for us. We've learned a lot as we've treaded the path of building isolated Web Components with React, and this article will detail much of that learning.
+The primary web technology our shop uses is React, so building Web Components with React is a primary need for us. We've learned a lot as we've tread that path, and this article will detail much of that learning.
 
 ## What are Web Components?
 
-[MDN has a very thorough and clear guide on Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), but in the simplest terms, Web Components is a way to build encapsulated elements rendered in isolation from the other elements on the DOM. This isolation allows you to have modularity and portability in individual client-side components, indifferent to their surrounding context.
+[MDN has a very thorough and clear guide on Web Components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), but in the simplest terms, Web Components are a way to build encapsulated elements rendered in isolation from the other elements on the DOM. This isolation allows you to have modularity and portability in individual client-side components, indifferent to their surrounding context.
 
 This portability and isolation can enable many of the benefits of Micro Frontends, which is why we decided to pursue Web Components as a Micro Frontends solution. [We'll discuss this at length later.](#web-components-as-micro-frontends)
 
@@ -16,9 +16,9 @@ But if we're using React, isn't some of that portability and isolation already b
 
 ## Why Build Web Components With React? Why not just _use React_?
 
-In a Web Component, you're not limited in the technology you use, so any approach should be feasible, but if you're using a technology like React already, why not simply ship shared React components for different pieces of functionality?
+In a Web Component, you're not limited in the technology you use, so any approach should be feasible, but if you're already using a technology like React, why not simply ship shared React components for different pieces of functionality?
 
-There are at a few answers to this question: 
+There are a few answers to this question:
 
 1. Shared components within the React system depend on a common set of React functionality. If you're building a component, and you want to use a newer feature, but the global version of React in your system does not support this feature, then you simply can't use it. A Web Component has no need to have a top-down version of React dictating the features it can use. The Web Component can use the version it needs.
 
@@ -39,8 +39,6 @@ The [React Docs describe a way you can use React to render Web Components](https
      allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr"
      sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
    ></iframe>
-
-
 The solution to this problem is to retarget events to the Shadow DOM, rather than to the original root node of the mounted element (`document.body`). [This React issue](https://github.com/facebook/react/issues/9242) describes a few different ways to solve this problem, most notably [`react-shadow-dom-retarget-events`](https://github.com/spring-media/react-shadow-dom-retarget-events), which works by adding an event listener for react-specific events to the Shadow DOM. This method works, to an extent, but can potentially be brittle (like if React adds new events). We wanted a less potentially-brittle solution.
 
 ### ReactHTMLElement
@@ -95,12 +93,12 @@ The next question we wanted to answer was: how do Web Components communicate wit
 
 ## Inter-Component Communication
 
-There are really two ways to handle this problem. You can  [build a Web Component with a JavaScript API](https://developers.google.com/web/fundamentals/web-components/customelements#jsapi), and pass data into the Web Component using a reference to the element itself, and calling the Javascript API you have defined. This method is good, but probably the simplest way for Web Components built with React is to use events on the Window. An app can emit a Window event, and another can listen for it to update based on any information that has changed.
+There are really two ways to handle this problem. You can  [build a Web Component with a JavaScript API](https://developers.google.com/web/fundamentals/web-components/customelements#jsapi), and pass data into the Web Component using a reference to the element itself by calling the Javascript API you have defined. This method is good, but probably the simplest way for Web Components built with React is to use events on the Window. An app can emit a Window event, and another can listen for it to update based on any information that has changed.
 
 Using events has a few key benefits:
 
 * Eventing is a [robust way of transferring complex data objects](https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Creating_and_triggering_events).
-* The implementation of a listener or dispatcher can be close to the point where that event information is  utilized.
+* The implementation of a listener or dispatcher can be close to the point where that event information is generated or utilized.
 * Your components can dispatch an event without knowing what might be listening.
 * Listeners can respond to events without knowing what element might dispatch it.
 
@@ -118,7 +116,7 @@ There are other concerns, as well, when dealing with our particular build proces
 
 ### Styled Components
 
-Luckily, styled-components gives us a simple solution for the problem of relocation style tags: the [`StyleSheetManager`](https://styled-components.com/docs/api#stylesheetmanager). This allows you to provide a node where the styles will ultimately land, so for a Web Component, you don't need to do much more than wrap your App in a stylesheet manager. A Web Component using [`ReactHTMLElement `](#reacthtmlelement) and `StyleSheetManager` might look like this:
+Luckily, styled-components gives us a simple solution for the problem of relocating style tags: the [`StyleSheetManager`](https://styled-components.com/docs/api#stylesheetmanager). This allows you to provide a node where the styles will ultimately land. So for a Web Component, you don't need to do much more than wrap your App in a stylesheet manager. A Web Component using [`ReactHTMLElement `](#reacthtmlelement) and `StyleSheetManager` might look like this:
 
 ```react
 class ReactWebComponent extends ReactHTMLElement {
@@ -194,7 +192,7 @@ For the `HTMLInlineCSSWebpackPlugin`, it's helpful to look at the HTML for our t
 </div> 
 ```
 
-In particular, `<-- inline css -->` is key. This gives our `HTMLInlineCSSWebpackPlugin` a target for where to place the inline styles. With that, our `webpack.config.js`  will look like this:
+In particular, `<!-- inline css -->` is key. This gives our `HTMLInlineCSSWebpackPlugin` a target for where to place the inline styles. With that, our `webpack.config.js`  will look like this:
 
 ```javascript
 const HtmlWebpackPlugin = require("html-webpack-plugin");
@@ -226,7 +224,7 @@ const HTMLInlineCSSWebpackPlugin = require("html-inline-css-webpack-plugin").def
 ...
 ```
 
-The addition of the `HTMLInlineCSSWebpackPlugin` causes the final state of our loaded CSS replace the `<!-- inline css -->` comment is in our original template.
+The addition of the `HTMLInlineCSSWebpackPlugin` causes the final state of our loaded CSS to replace `<!-- inline css -->`  in our original template.
 
 Altogether, those plugins solve the problem of placing the final result of our CSS `import`s inline in our HTML template. That done, how do we use the final HTML result in our Web Component?
 
@@ -366,7 +364,7 @@ This begets two problems, though, the first being that Web Components don't have
 
 This is a glaring problem: Web Components are very isolated in every sense _except for in JavaScript_. The `window` and `document` in a Web Component are the same `window` and `document` in the surrounding page. So any third party dependency would either need to be externalized to the `window`, causing us to have to make a top-down decision about dependencies and versions that our Web Components can rely on, or we'd need some way to isolate these external dependencies without simply packaging them into our bundles.
 
-We much preferred the second option, but couldn't find a way to do it, so we built one. Our teams are all using webpack for their build, so we wrote a webpack plugin to wrap the bundles in a closure, and include any [`externals`](https://webpack.js.org/configuration/externals/) within the closure so that our application can refer to them as global dependencies, without the need for those externals to actually be on the global context. The resulting package is called the [`isolated-externals-plugin`](https://github.com/WTW-IM/isolated-externals-plugin). Utilizing this plugin allows us to load a UMD package more than once on the same page without polluting the `window` object (so long as those UMD bundles refer to `this` and not the `window` directly).
+We much preferred the second option, but couldn't find a way to do it, so we built one. Our teams are all using webpack for their build, so we wrote a webpack plugin to wrap the bundles in a closure, and include any [`externals`](https://webpack.js.org/configuration/externals/) within the closure. This allows our application to refer to the `externals` as global dependencies, without the need for those externals to actually be on the global context. The resulting package is called the [`isolated-externals-plugin`](https://github.com/WTW-IM/isolated-externals-plugin). Utilizing this plugin allows us to load a UMD package more than once on the same page without polluting the `window` object (so long as those UMD bundles refer to `this` and not the `window` directly).
 
 There are trade-offs here, the primary one being that the resulting JavaScript heap will include these dependencies more than once, but remember — we'd run into that same problem if we were bundling our dependencies into our applications anyway. This way, we end up having those dependencies in the heap more than once, but we only need to load them over the wire a single time.
 
@@ -377,7 +375,7 @@ The second problem begotten by the effort to isolate our external dependencies i
 We'll have a very slow-loading page if we have many Web Components loading separate versions of external dependencies independently, but we can solve this problem in two steps.
 
 1. Use [`unpkg`](https://unpkg.com/) as our "official" CDN to load these external dependencies.
-2. Utilize `unpkg`'s [semver](https://semver.org/) range functionality to refer only to the major version of your dependencies. This way, even if one Web Component was built on React@16.13.0 and another one was built on React@16.13.1, they can both use [unpkg.com/react@16/umd/react.production.min.js](https://unpkg.com/react@16/umd/react.production.min.js) at runtime. With that url (`@16` being the key portion), both Components will load the latest version of React@16, which will include the functionality of the previous patch versions.
+2. Utilize `unpkg`'s [semver](https://semver.org/) range functionality to refer only to the major version of your dependencies. This way, even if one Web Component was built on React@16.13.0 and another one was built on React@16.13.1, they can both use [unpkg.com/react@16/umd/react.production.min.js](https://unpkg.com/react@16/umd/react.production.min.js) at runtime. With that url (`@16` being the key portion), both Components will load the latest version of React@16, which will include the functionality of the previous minor and patch versions.
 
 Doing these two things allows us to ensure that, generally, we'll only load a major version of a dependency over the wire once. Should teams see a need to be very specific about their versions, they can still specify an exact version, but for most cases, we'll be safe loading the versions of dependencies we need, and still limiting the bytes we transfer over the wire.
 
@@ -385,11 +383,11 @@ With a solution for caching our external dependencies in place, we could focus o
 
 ### File Naming, Cache-Busting, and Deployment
 
-The traditional way of ensuring that browsers load the newest version of a javascript application is to append a new hash onto the filename with each deployment and set `Cache-Control` headers for these files to keep files for something like a year. For our case, we don't want downstream teams to know about a new hash because we don't want teams to need to be aware that a new version of a component was released. For our purposes, adding a hash to the filename would not work.
+The traditional way of ensuring that browsers load the newest version of a javascript application is to append a new hash onto the filename with each deployment and set `Cache-Control` headers for these files to keep assets for something like a year. For our case, we don't want downstream teams to know about a new hash because we don't want teams to need to be aware that a new version of a component was released. For us, adding a hash to the filename would not work.
 
 Instead, we decided to have our Components delivered with static file names (something like `shopping-component.js`), and we would rely on the [`ETag` Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) and the built-in browser behaviors around it to manage cache busting.
 
-To allow `ETag` headers to work, the server that delivers the static files simply needs to generate an `ETag` value for each new version of the file to compare against when the browser requests the static resource, and send that on the response with the content. When the browser sends a request for a file with an `ETag` Header value that matches the file on the server, the server returns a `304 Not Modified` response, and, the browser will fall back to its cached resource. When the `ETag` values are mismatched, the server will send the new version of the file along with a `200 OK` response.
+To allow `ETag` headers to work, the server that delivers the static files simply needs to generate an `ETag` value for each new version of the file to compare against when the browser requests the static resource, and send that on the response with the content. When the browser sends a request for a file with an `ETag` Header value that matches the file on the server, the server returns a `304 Not Modified` response, causing the browser to fall back to its cached resource. When the `ETag` values are mismatched, the server will send the new version of the file along with a `200 OK` response.
 
 In our case, most of our applications are built with [.NET Core](https://docs.microsoft.com/en-us/dotnet/core/). In that framework, the [`useStaticFiles` middleware](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-3.1#serve-files-inside-of-web-root) does the right thing with `ETag` headers out of the box. It will return a new `ETag` value for changed files, and will return a `304 Not Modified` response when the requested asset is unchanged.
 
@@ -400,7 +398,7 @@ There are tradeoffs with utilizing the `Etag` header to manage caching:
 
 There are some mitigating factors there, though:
 
-* The size of the 304 response is a few hundred bytes, which is typically minuscule to your actual bundle size (generally some tens-to-hundreds of kilobytes).
+* The size of the 304 response is a few hundred bytes, which is typically minuscule compared to your actual bundle size (generally some tens-to-hundreds of kilobytes).
 * If you're delivering a static file where you have a good understanding of the change rate (do we deploy new code every day, week, month, etc?), then you can set up `Cache-Control` headers to meet the needs of your specific case.
 
 Understanding how we can deploy these files with a static name and consistent cache busting is really good, but in itself, it's not enough to give us the independence for teams that we're looking for. For that, teams need to be able to deploy their applications independently, without the need to notify other teams of a change, or to step on the toes of other teams by deploying through the same deployment pipeline.
