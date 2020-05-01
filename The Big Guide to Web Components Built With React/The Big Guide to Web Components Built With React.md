@@ -1,10 +1,10 @@
 # The Big Guide to Web Components Built With React
 
-Our team at WTW wanted to find a way to deploy multiple small applications to the same page in a way that allows teams to separately develop, build, and deploy their apps in isolation, and without having to rely on other people or teams in order to get their work into a production environment. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
+Our team at WTW wanted to find a way to deploy multiple small applications to the same webpage in a way that allows greater than a dozen teams to separately develop, build, and deploy their apps in isolation, and without having to have multiple gates (other people, teams, etc) in order to get new code into production. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
 
 We researched a lot of different way of handling this problem, but finally landed on utilizing Web Components as our solution. This allows us to deploy individual, isolated Javascript applications together on a single page without much responsibility on other teams to expend a lot of work to integrate those components.
 
-The primary web technology our shop uses is React. Using React with Web Components was a primary need for us. We've learned a lot as we've treaded the path of building isolated Web Components with React.
+The primary web technology our shop uses is React, so using React with our Web Components decision was a primary need for us. We've learned a lot as we've treaded the path of building isolated Web Components with React.
 
 ## What are Web Components?
 
@@ -372,6 +372,36 @@ We'll have a very slow-loading page if we have a bunch of components loading sep
 
 Doing these two things allows us to ensure that, generally, we'll only load a major version of a dependency over the wire once. Should teams see a need to be very specific about their versions, they can still specify an exact version, but for most cases, we'll be safe loading the versions of dependencies we need, and still limiting the bytes we transfer over the wire.
 
-### Deployment and Routing
+With a solution for caching our external dependencies in place, we could focus on a solution for caching and refreshing our bundles.
+
+### File Naming, Cache-Busting, and Deployment
+
+The traditional way of ensuring that browsers load the newest version of a javascript application is to append a new hash onto the filename with each deployment. For our case, because we don't want teams to have to be aware that a new version was released, we didn't want to go this route.
+
+Instead, we decided to have a static file name (something like `shopping-component.js`), and we would rely on the [`ETag` Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) and the built-in browser behaviors around it to manage cache busting.
+
+To allow `ETag` headers to work, the server that delivers the static files simply needs to generate an `ETag` value for each new version of the file to compare against when the browser requests the static resource, and send that on the response with the content. When the browser sends a request for a file with an `ETag` Header value that matches the file on the server, the server returns a `304 Not Modified` response, and, the browser will fall back to its cached resource. When the `ETag` values are mismatched, the server will send the new version of the file along with a `200 OK` response.
+
+In our case, most of our applications are built with .NET Core. In that framework, the [`useStaticFiles` middleware](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-3.1#serve-files-inside-of-web-root) does the right thing with `ETag` headers out of the box. It will return a new `ETag` value for changed files, and will return a `304 Not Modified` response when the requested asset is unchanged.
+
+The tradeoff with utilizing the `Etag` header to manage caching is that the browser does have to make a request to the server to confirm the `ETag` value, and there isn't a one-size solution to utilize `Cache-Control` headers. The difference in the size of the 304 response, however, is a few hundred bytes compared to your actual bundle size (generally some tens-to-hundreds of kilobytes). If you're delivering something that you have a good understanding of the change rate (do we deploy new code every day, week, month, etc?), then you can set up `Cache-Control` headers to meet the needs of your specific Web Component.
+
+Understanding how we can deploy these files with a static name and consistent cache busting is really good, but in itself, it's not enough to give us the independence for teams that we're looking for. For that, teams need to be able to deploy their applications independently, without the need to notify other teams of a change, or to step on the toes of other teams.
+
+#### Deploying Independently
+
+There are a number of ways to solve this problem, but our solution is to utilize right-hand routing (configured in a load balancer) to determine which servers a particular request should go to. In a traditional or monolithic application, traffic might move a little bit like this:
+
+![Diagram describing all traffic from base-domain.com being sent to a single primary server, no matter the path that is being requested.](/Users/stevma/MacsideProjects/writing/The Big Guide to Web Components Built With React/monolithic-routing.png)
+
+For our purposes, we use the path (the "right-hand route") to determine which of any number of servers to send traffic to:
+
+![Diagram describing traffic from base-domain.com being sent to multiple different servers, depending on the path.](/Users/stevma/MacsideProjects/writing/The Big Guide to Web Components Built With React/right-hand-routing.png)
+
+This allows our teams to manage their business domain (or Bounded Context) entirely, from how business logic is handled on the server side to how display and input are handled on the client side.
+
+In order to deliver Web Components as single JavaScript files from multiple different servers, we simply deploy those files to these independent servers, and refer to them using our path-based routing. So for a Shopping web component, a url may be something like `base-domain.com/shop/shopping-component.js`, which will be delivered by a server in the Shopping Bounded Context, and for an Account web component, you might have a similar url — something like `base-domain.com/account/account-component.js` — which is delivered from a server in the Account Bounded Context.
+
+With these pieces in place, a webpage can load different components from different servers, independently managed and deployed by disparate teams, with the confidence that new code will be properly cache-busted on the client side.
 
 ## About Browser Compatibility

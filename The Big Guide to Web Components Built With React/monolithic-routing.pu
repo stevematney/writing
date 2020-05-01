@@ -1,0 +1,9 @@
+@startuml
+(*) --> "base-domain.com"
+"base-domain.com" --> "base-domain.com/shop"
+"base-domain.com/shop" --> "Primary Server"
+"base-domain.com" --> "base-domain.com/account"
+"base-domain.com/account" --> "Primary Server"
+"base-domain.com" --> "base-domain.com/home"
+"base-domain.com/home" --> "Primary Server"
+@enduml
