@@ -1,6 +1,6 @@
 # The Big Guide to Web Components Built With React
 
-Our team at Willis Towers Watson wanted to find a way to deploy multiple small applications to the same webpage in a way that allows greater than a dozen teams to separately develop, build, and deploy their apps in isolation, and without having to have multiple gates (other people, teams, etc) in order to get new code into production. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
+Our team at Willis Towers Watson wanted to find a way to deploy multiple small applications to the same webpage. In this, we're not talking about multiple _elements_ of a page (like a form or an accordion or some other UI element), but individual applications — encapsulated pieces of business functionality, like a shopping cart, or something that updates household information. Further, we wanted to find an approach that would allow greater than a dozen teams to separately develop, build, and deploy their apps in isolation without having to have multiple gates (other people, teams, etc) in order to get new code into production. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
 
 We researched a lot of different ways of handling this problem, but finally landed on utilizing Web Components as our solution. This allows us to deploy individual, isolated Javascript applications together on a single page without responsibility on other teams to expend a lot of work to integrate those components.
 
@@ -96,16 +96,24 @@ The next question we wanted to answer was: how do Web Components communicate wit
 
 ## Inter-Component Communication
 
-There are really two ways to handle this problem. You can  [build a Web Component with a JavaScript API](https://developers.google.com/web/fundamentals/web-components/customelements#jsapi), and pass data into the Web Component using a reference to the element itself by calling the Javascript API you have defined. This method is good, but probably the simplest way for Web Components built with React is to use events on the Window. An app can emit a Window event, and another can listen for it to update based on any information that has changed.
+For our purposes, we want our Web Components to have as little need for knowledge of their surrounding context as possible. We expect there to be very little if any chatter between our Micro Frontends, and prefer that these individual Components be responsible for their own data management and gathering. For us, this typically means utilizing the authentication session to get access to a user ID to work from. However, though we may limit those cross-domain interactions, there will always be at least some need for pieces of a webpage to know that another piece changed something. There are really three ways to handle this problem:
 
-Using events has a few key benefits:
+1. You can pass data on attributes to a Web Component. This works and is part of the expectation of Web Components, but this data, as with traditional HTML elements, can only only be in primitive types, like strings and numbers. This is good for very simple data transfer from a parent directly to a child.
 
-* Eventing is a [robust way of transferring complex data objects](https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Creating_and_triggering_events).
-* The implementation of a listener or dispatcher can be close to the point where that event information is generated or utilized.
-* Your components can dispatch an event without knowing what might be listening.
-* Listeners can respond to events without knowing what element might dispatch it.
+2. You can  [build a Web Component with a JavaScript API](https://developers.google.com/web/fundamentals/web-components/customelements#jsapi), and pass data into the Web Component using a reference to the element itself by calling the Javascript API you have defined. This method is good, but has some limitations in that whatever wants to use the API must have a reference to the component itself, which means that one component would need to explicitly know about the presence of another one.
 
-With that resolved, we could tackle our next challenge: styles.
+3. Probably the simplest way for Web Components built with React is to use events on the Window. An app can emit a Window event, and another can listen for it to update based on any information that has changed.
+
+   Using events has a few key benefits:
+
+    * Eventing is a [robust way of transferring complex data objects](https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Creating_and_triggering_events).
+    * The implementation of a listener or dispatcher can be close to the point where that event information is generated or utilized.
+    * Your components can dispatch an event without knowing what might be listening.
+    * Listeners can respond to events without knowing what element might dispatch it.
+
+We would caution that, if Web Components are showing a lot of chattiness between domains, there may be a problem in your segregation. This can often happen when you've gone _too far_ with separating concerns. 
+
+So with the issue of communication between Components resolved, we could tackle our next challenge: styles.
 
 ## Styles
 
@@ -420,7 +428,7 @@ For our purposes, we use the path (the "right-hand route") to determine which of
 
 ![Diagram describing traffic from base-domain.com being sent to multiple different servers, depending on the path.](./right-hand-routing.png)
 
-This allows our teams to manage their business domain (or Bounded Context) entirely, from how business logic is handled on the server side to how display and inputs are handled on the client side.
+This allows our teams to manage their entire business domain (or Bounded Context), from how business logic is handled on the server side to how display and inputs are handled on the client side.
 
 In order to deliver Web Components as single JavaScript files from multiple different servers, we simply deploy those files to these independent servers, and refer to them using our path-based routing. For example, a Shopping web component url may be something like `base-domain.com/shop/shopping-component.js`, which will be delivered by a server in the Shopping Bounded Context. For a separate Bounded Context, like Account, you might have a similar url for a Web Component — something like `base-domain.com/account/account-component.js` — which is delivered from a server in the Account Bounded Context.
 
