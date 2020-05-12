@@ -443,3 +443,7 @@ All the considerations above made it possible for our teams to utilize Web Compo
 With [Microsoft Edge moving to a Chromium base](https://support.microsoft.com/en-us/help/4501095/download-the-new-microsoft-edge-based-on-chromium), all major browsers now natively support Web Components. If you need to support older browsers, the [Web Components polyfills](https://www.webcomponents.org/polyfills) do an excellent job of providing backwards-compatibility.
 
 We were having a very difficult time getting our components to function properly in pre-Chromium Edge, so we've added a banner to our site that appears for older versions of Edge (and IE11 and below) that encourages users to update to the new Edge (which will happen automatically for Edge-users anyway [with Windows updates](https://docs.microsoft.com/en-us/deployedge/microsoft-edge-sysupdate-windows-updates)), or to another evergreen browser.
+
+## Appendix B: Best Practices
+
+Google has a [list of best practices](https://developers.google.com/web/fundamentals/web-components/best-practices) with Custom Elements, which is helpful and can help you avoid some pitfalls, like accidentally creating infinite loops.
