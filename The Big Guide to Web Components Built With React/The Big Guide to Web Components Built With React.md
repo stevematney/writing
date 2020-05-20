@@ -100,6 +100,8 @@ For our purposes, we want our Web Components to have as little need for knowledg
 
 1. You can pass data on attributes to a Web Component. This works and is part of the expectation of Web Components, but this data, as with traditional HTML elements, can only only be in primitive types, like strings and numbers. This is good for very simple data transfer from a parent directly to a child.
 
+   When using this method, remember that traditional HTML attributes [are case-insensitive](https://w3c.github.io/html-reference/documents.html#case-insensitivity), so make sure you're using attributes like `userid` or `user-id` and not `userId`.
+
 2. You can  [build a Web Component with a JavaScript API](https://developers.google.com/web/fundamentals/web-components/customelements#jsapi), and pass data into the Web Component using a reference to the element itself by calling the Javascript API you have defined. This method is good, but has some limitations in that whatever wants to use the API must have a reference to the component itself, which means that one component would need to explicitly know about the presence of another one.
 
 3. Probably the simplest way for Web Components built with React is to use events on the Window. An app can emit a Window event, and another can listen for it to update based on any information that has changed.
