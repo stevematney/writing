@@ -1,10 +1,39 @@
 # The Big Guide to Web Components Built With React
 
+#### Table of Contents:
+
+* [Introduction](#introduction)
+* [What are Web Components](#what-are-web-components)
+* [Why Build. Web Components With React? Why Not Just _Use React_](#why-build-web-components-with-react-why-not-just-use-react)
+* [The Functionality Problem](#the-functionality-problem)
+  * [`ReactHTMLElement`](#reacthtmlelement)
+  * [Rendering Externally-Provided Children](#rendering-externally-provided-children)
+  * [Inter-Component Communication](#inter-component-communication)
+  * [Styles](#styles)
+    * [Styled Components](#styled-components)
+    * [CSS Modules with Webpack](#css-modules-with-webpack)
+      * [Inlining Styles](#inlining-styles)
+      * [Using The HTML Template In Our Web Component](#using-the-html-template-in-our-web-component)
+    * [Fonts](#fonts)
+  * [React Portals and `document.body`](#react-portals-and-documentbody)
+* [Web Components as Micro Frontends](#web-components-as-micro-frontends)
+  * [Building Micro Frontends](#building-micro-frontends)
+    * [Javascript Isolation](#javascript-isolation)
+    * [Intelligently Utilizing Browser Caching](#intelligently-utilizing-browser-caching)
+  * [File Naming, Cache-Busting, and Deployment](#file-naming-cache-busting-and-deployment)
+    * [Deploying Independently](#deploying-independently)
+    * [What About Breaking Changes?](#what-about-breaking-changes)
+* [Wrap-Up](#wrap-up)
+* [Appendix A: About Browser Compatibility](#appendix-a-about-browser-compatibility)
+* [Appendix B: Best Practices](#appendix-b-best-practices)
+
+## Introduction
+
 Our team at Willis Towers Watson wanted to find a way to deploy multiple small applications to the same webpage. In this, we're not talking about multiple _elements_ of a page (like a form or an accordion or some other UI element), but individual applications — encapsulated pieces of business functionality, like a shopping cart, or something that updates household information. Further, we wanted to find an approach that would allow greater than a dozen teams to separately develop, build, and deploy their apps in isolation without having to have multiple gates (other people, teams, etc) in order to get new code into production. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
 
 We researched a lot of different ways of handling this problem, but finally landed on utilizing Web Components as our solution. This allows us to deploy individual, isolated Javascript applications together on a single page without responsibility on other teams to expend a lot of work to integrate those components.
 
-The primary web technology our shop uses is React, so building Web Components with React is a primary need for us. We've learned a lot as we've tread that path, and this article will detail much of that learning.
+The main web technology our shop uses is React, so building Web Components with React is a primary need for us. We've learned a lot as we've tread that path, and this article will detail much of that learning.
 
 ## What are Web Components?
 
@@ -14,7 +43,7 @@ This portability and isolation can enable many of the benefits of Micro Frontend
 
 But if we're using React, isn't some of that portability and isolation already built in?
 
-## Why Build Web Components With React? Why not just _use React_?
+## Why Build Web Components With React? Why Not Just _Use React_?
 
 In a Web Component, you're not limited in the technology you use, so any approach should be feasible, but if you're already using a technology like React, why not simply ship shared React components for different pieces of functionality?
 
@@ -435,6 +464,23 @@ This allows our teams to manage their entire business domain (or Bounded Context
 In order to deliver Web Components as single JavaScript files from multiple different servers, we simply deploy those files to these independent servers, and refer to them using our path-based routing. For example, a Shopping web component url may be something like `base-domain.com/shop/shopping-component.js`, which will be delivered by a server in the Shopping Bounded Context. For a separate Bounded Context, like Account, you might have a similar url for a Web Component — something like `base-domain.com/account/account-component.js` — which is delivered from a server in the Account Bounded Context.
 
 With these pieces in place, a webpage can load different components from different servers, independently managed and deployed by disparate teams, with the confidence that new code will be properly cache-busted on the client side.
+
+So, we've got consistent cache busting and independent deployments, all under the control of a single team, and that's great, but what about when a Web Component has to change in some fundamental way?
+
+#### What About Breaking Changes?
+
+Brreaking changes are anything that would cause an error or disruption to our dependents. When talking about Web Components, things that fit into that category are:
+
+* Anything that changes the expected size of the Component in the browser. 
+  * This is Component-specific. Some scenarios using Web Components may allow for certain  changes in size without considering them to be breaking.
+* Changing [observed attribute](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#Using_the_lifecycle_callbacks) names (without backwards-compatibility).
+* Changing the surface or contracts of the Component's custom Javascript API.
+* Changing the names of emitted events.
+* Changing the shape of the data in emitted events.
+
+In our case, we recommend versioning URLs like you might do in a REST API. So if your original release is something like `/cart/web-components/v1/cart-button.js`, a breaking version can simply be `/cart/web-components/v2/cart-button.js`. Doing this allows a team to release a new, breaking version of a Web Component without automatically breaking downstream clients, and it allows downstream clients to update to the breaking version at their pace.
+
+It's important to note that, following the [`Semantic Versioning model`](https://semver.org/), the URL version  of Micro Frontend Web Components  should only be updated with major versions and on breaking changes. These URL-versioned releases eliminate the ability to release the new change without downstream cooperation. Any dependents will need to manually update the Web Component's URL to get the new version, so releasing new major versions for changes that aren't breaking, or releasing minor or patch versions in the URL will severely hinder a team's flow of continuous improvement.
 
 ## Wrap-Up
 
