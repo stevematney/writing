@@ -10,10 +10,7 @@
   * [Rendering Externally-Provided Children](#rendering-externally-provided-children)
   * [Inter-Component Communication](#inter-component-communication)
   * [Styles](#styles)
-    * [Styled Components](#styled-components)
-    * [CSS Modules with Webpack](#css-modules-with-webpack)
-      * [Inlining Styles](#inlining-styles)
-      * [Using The HTML Template In Our Web Component](#using-the-html-template-in-our-web-component)
+    * [Styled Components](#using-the-html-template-in-our-web-component)
     * [Fonts](#fonts)
   * [React Portals and `document.body`](#react-portals-and-documentbody)
 * [Web Components as Micro Frontends](#web-components-as-micro-frontends)
@@ -22,7 +19,7 @@
     * [Intelligently Utilizing Browser Caching](#intelligently-utilizing-browser-caching)
   * [File Naming, Cache-Busting, and Deployment](#file-naming-cache-busting-and-deployment)
     * [Deploying Independently](#deploying-independently)
-    * [What About Breaking Changes?](#what-about-breaking-changes)
+    * [What About Breaking Changes? - Versioning](#what-about-breaking-changes--versioning)
 * [Wrap-Up](#wrap-up)
 * [Appendix A: About Browser Compatibility](#appendix-a-about-browser-compatibility)
 * [Appendix B: Best Practices](#appendix-b-best-practices)
@@ -59,33 +56,17 @@ There are some limitations and hurdles when it comes to using React in Web Compo
 
 ## The Functionality Problem
 
-The [React Docs describe a way you can use React to render Web Components](https://reactjs.org/docs/web-components.html#using-react-in-your-web-components), but a deeper exploration of this idea reveals an issue: anything that uses events within your React Web Component to update the internal state simply does not work. You can [see an example of this broken functionality on this Sandbox](https://codesandbox.io/s/react-web-component-without-retargeting-events-b61u3?file=/src/index.js), (displayed below):
-
-<iframe
-     src="https://codesandbox.io/embed/react-web-component-without-retargeting-events-b61u3?fontsize=14&hidenavigation=1&initialpath=%2Fhome&theme=dark"
-     style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
-     title="React Web Component Without Retargeting Events"
-     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr"
-     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-   ></iframe>
-
+The [React Docs describe a way you can use React to render Web Components](https://reactjs.org/docs/web-components.html#using-react-in-your-web-components), but a deeper exploration of this idea reveals an issue with React 16: anything that uses events within your React Web Component to update the internal state simply does not work. You can [see an example of this broken functionality on this Sandbox](https://codesandbox.io/s/react-web-component-without-retargeting-events-b61u3?file=/src/index.js).
 
 The solution to this problem is to retarget events to the Shadow DOM, rather than to the original root node of the mounted element (`document.body`). [This React issue](https://github.com/facebook/react/issues/9242) describes a few different ways to solve this problem, most notably [`react-shadow-dom-retarget-events`](https://github.com/spring-media/react-shadow-dom-retarget-events), which works by adding an event listener for react-specific events to the Shadow DOM. This method works, to an extent, but can potentially be brittle (like if React adds new events). We wanted a less potentially-brittle solution.
 
 ### ReactHTMLElement
 
-Our approach has been a little bit different from `react-shadow-dom-retarget-events`: we wrote a Javascript Class called [`react-html-element`](https://github.com/WTW-IM/react-html-element) that extends `HTMLElement`, creates a Shadow DOM, adds the appropriate `createElement` functions to it,  and sets the Shadow DOM as the `ownerDocument` for the `mountPoint` where your React app is intended to be mounted. This solves the event retargeting problem in a robust way because it doesn't depend on any specific React implementation details, and simply allows the Shadow DOM to capture all events from within the React application. You can see the [same example from above, but using `ReactHTMLElement` ](https://codesandbox.io/s/react-web-component-with-reacthtmlelement-7gsrj?file=/src/index.js), and now the functionality is working. (Displayed below.)
-
-<iframe
-     src="https://codesandbox.io/embed/react-web-component-with-reacthtmlelement-7gsrj?fontsize=14&hidenavigation=1&initialpath=%2Fhome&theme=dark"
-     style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
-     title="React Web Component With ReactHTMLElement"
-     allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr"
-     sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
-   ></iframe>
-
+Our approach has been a little bit different from `react-shadow-dom-retarget-events`: we wrote a Javascript Class called [`react-html-element`](https://github.com/WTW-IM/react-html-element) that extends `HTMLElement`, creates a Shadow DOM, adds the appropriate `createElement` functions to it,  and sets the Shadow DOM as the `ownerDocument` for the `mountPoint` where your React app is intended to be mounted. This solves the event retargeting problem in a robust way because it doesn't depend on any specific React implementation details, and simply allows the Shadow DOM to capture all events from within the React application. You can see the [same example from above, but using `ReactHTMLElement` ](https://codesandbox.io/s/react-web-component-with-reacthtmlelement-7gsrj?file=/src/index.js), and now the functionality is working.
 
 This was our first consideration, as it is the most clear problem when building Web Components with React. The next problem we wanted to solve was: how do we render HTML Children within a Web Component?
+
+> :rotating_light: React 17 should solve the issue described above. You may _not_ want to use `ReactHTMLElement` if you're on React 17. We plan shortly to release an update that will include some of the nice-to-haves of `ReactHTMLElement`, but relying on React 17 to solve the event targeting problem.
 
 ## Rendering Externally-Provided Children
 
@@ -174,184 +155,7 @@ class ReactWebComponent extends ReactHTMLElement {
 
 To be clear, we use `this.mountPoint.parentNode` for the styles instead of simply using `this.mountPoint` for the case of unmounting. If stylesheets are the first child of  `this.mountPoint`, ReactDOM will throw an error when you try to unmount, (`unmountComponentAtNode(): The node you're attempting to unmount was rendered by another copy of React.`) This error is a little cryptic, but the bottom line is that ReactDOM expects that everything inside the mounted node was generated by React itself. When we use the same node to place our styles, it breaks that expectation.
 
-### CSS Modules with webpack
-
-For our case, we didn't have an explicit need to build a Web Component with React, webpack, and CSS Modules, but, given that it is such a common scenario, we wanted to cover this case as well.
-
-There are two key questions to be answered here to ensure that we conform to the style constraints present with Web Components:
-
-1. How can I ensure my styles end up as inline `<style>` tags?
-2. How can I make sure the inline `<style>` tags are within the Shadow DOM of my Web Component?
-
-We'll take these on as two separate pieces, but the key to both is utilizing [`HtmlWebpackPlugin`](https://github.com/jantimon/html-webpack-plugin) to generate an HTML file we'll use in our Web Component template. That plugin should have a configuration similar to the following `webpack.config.js`. Note `inject: false`; we need that because we won't be injecting our Web Component javascript into the HTML template:
-
-```javascript
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-...
-    new HtmlWebpackPlugin({
-      template: "path/to/template.html",
-      filename: "template.html",
-      inject: false,
-    }),
-...
-```
-
-With that in place, we can work on inlining our styles.
-
-#### Inlining Styles
-
-The simplest way that we've found to get our styles inline in our Web Components is a combination of two other webpack plugins; the [`MiniCssExtractPlugin`](https://github.com/webpack-contrib/mini-css-extract-plugin) and the [`HTMLInlineCssWebpackPlugin`](https://github.com/Runjuu/html-inline-css-webpack-plugin). The first step in that process is to add the loader from the `MiniCssExtractPlugin` to your CSS loaders, and to include the plugin as part of your plugins:
-
-```javascript
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-...
-  module: {
-    rules: [
-      {
-        test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
-      },
-    ],
-    plugins: [
-      new HtmlWebpackPlugin({
-        template: "path/to/template.html",
-        filename: "template.html",
-        inject: false,
-      }),
-      new MiniCSSExtractPlugin()
-    ]
-  },
-...
-```
-
-For the `HTMLInlineCSSWebpackPlugin`, it's helpful to look at the HTML for our template:
-
-```html
-<!-- inline css -->
-<div id="app-container">
-  <div id="mount"></div>
-</div> 
-```
-
-In particular, `<!-- inline css -->` is key. This gives our `HTMLInlineCSSWebpackPlugin` a target for where to place the inline styles. With that, our `webpack.config.js`  will look like this:
-
-```javascript
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const HTMLInlineCSSWebpackPlugin = require("html-inline-css-webpack-plugin").default;
-...
-  module: {
-    rules: [
-      {
-        test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
-      },
-    ],
-    plugins: [
-      new HtmlWebpackPlugin({
-        template: "path/to/template.html",
-        filename: "template.html",
-        inject: false,
-      }),
-      new MiniCSSExtractPlugin(),
-      new HTMLInlineCSSWebpackPlugin({
-        replace: {
-          target: "<!-- inline css -->",
-          removeTarget: true,
-        },
-      })
-    ]
-  },
-...
-```
-
-The addition of the `HTMLInlineCSSWebpackPlugin` causes the final state of our loaded CSS to replace `<!-- inline css -->`  in our original template.
-
-Altogether, those plugins solve the problem of placing the final result of our CSS `import`s  into our HTML template as `<style>` tags. That done, how do we use the final HTML result in our Web Component?
-
-#### Using The HTML Template In Our Web Component
-
-The first idea for using this HTML might be to include it in your global HTML page as a`<template>`, but we wanted to avoid this, as we didn't want dependents of our Web Components to need more than a single resource for the Component to work.
-
-That being the case, our first pass of solving this problem simply pulled our final HTML template into our JavaScript as a separate request once our Web Component was initialized, but we thought — since we're using webpack, and webpack knows about our final HTML — we should be able to inject the final template as a string into our JavaScript.
-
-After a lot of searching, we couldn't find any existing way to do this with webpack, so we wrote a plugin to handle it. The [`InlineHTMLTemplatePlugin`](https://github.com/WTW-IM/inline-html-template-plugin). This plugin allows us to put a string into our JavaScript that webpack will overwrite with our final HTML template. Including that in our `webpack.config.js` would look like this:
-
-```javascript
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const HTMLInlineCSSWebpackPlugin = require("html-inline-css-webpack-plugin").default;
-const InlineHTMLTemplatePlugin = require("inline-html-template-plugin").default;
-...
-  module: {
-    rules: [
-      {
-        test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
-      },
-    ],
-    plugins: [
-      new HtmlWebpackPlugin({
-        template: "path/to/template.html",
-        filename: "template.html",
-        inject: false,
-      }),
-      new MiniCSSExtractPlugin(),
-      new HTMLInlineCSSWebpackPlugin({
-        replace: {
-          target: "<!-- inline css -->",
-          removeTarget: true,
-        },
-      }),
-      new InlineHTMLTemplatePlugin()
-    ]
-  },
-...
-```
-
-And in our JavaScript, we simply place:
-
-```javascript
-const loadedTemplate = "/* InlineHTML: template.html */";
-```
-
-Where `template.html` is the `filename` of our HTML from the `HtmlWebpackPlugin`. 
-
-Our final Incrementer app from above using this template inside `ReactHTMLElement`'s constructor would look like this:
-
-```javascript
-import React from "react";
-import ReactDOM from "react-dom";
-import ReactHTMLElement from "react-html-element";
-
-import WebComponentApp from "./WebComponentApp";
-
-const loadedTemplate = "/* InlineHTML: template.html */";
-
-class WebComponent extends ReactHTMLElement {
-  connectedCallback() {
-    ReactDOM.render(
-      <React.StrictMode>
-        <WebComponentApp />
-      </React.StrictMode>,
-      this.mountPoint
-    );
-  }
-  
-  constructor() {
-    super(loadedTemplate, "#mount")
-  }
-}
-
-customElements.define("web-component", WebComponent);
-```
-
-In our resulting JS bundle, this `InlineHTML` string will be replaced with our HTML template. This allows us to use our final HTML as the `innerHTML` for our component's Shadow DOM, and to mount our app to the `div` whose ID is `mount`.
-
-When we load the HTML into our JavaScript, we avoid a second request, and this allows our Web Component to be a single JavaScript bundle instead of requiring downstream dependents to have to load more than one thing in order to use our Web Components.
-
-This allows us to isolate our styles to our Web Component, but what about fonts? Don't they have to be set globally?
+There is one case where you do not want your Web Component code to be contained inside your Shadow DOM: Fonts.
 
 ### Fonts
 
@@ -383,7 +187,7 @@ The key here, for us, was to use the [`getRootNode`](https://developer.mozilla.o
 
 When `getRootNode` returns `document`, we needed to drill down to `document.body` because attempting  to append a child to the `document` directly produces the error "[Failed to execute 'appendChild' on 'Node': Only one element on document allowed](https://stackoverflow.com/a/48938528)."
 
-In order to circumvent this error, we created a react hook called [`useRootNode`](https://github.com/WTW-IM/es-components/blob/master/packages/es-components/src/components/util/useRootNode.js) that appropriately returns `document.body`  when a component ref is on the `document` directly, or the correct shadow root when the ref is within a Shadow DOM. This allowed us to use the value from `useRootNode` to target our `React.createPortal` calls, rather than naively pointing only to `document.body`.
+In order to circumvent this error, we created a React hook called [`useRootNode`](https://github.com/WTW-IM/es-components/blob/master/packages/es-components/src/components/util/useRootNode.js) that appropriately returns `document.body`  when a component ref is on the `document` directly, or the correct shadow root when the ref is within a Shadow DOM. This allowed us to use the value from `useRootNode` to target our `React.createPortal` calls, rather than naively pointing only to `document.body`.
 
 With that solved, we could talk about putting the picture together.
 
@@ -433,7 +237,7 @@ Instead, we decided to have our Components delivered with static file names (som
 
 To allow `ETag` headers to work, the server that delivers the static files simply needs to generate an `ETag` value for each new version of the file to compare against. When the browser requests the static resource, it should send that `ETag` Header and value on the response with the content. When the browser sends a request for a file with an `ETag` Header value that matches the file on the server, the server returns a `304 Not Modified` response, causing the browser to fall back to its cached resource. When the `ETag` values are mismatched, the server will send back the new version of the file along with a `200 OK` response.
 
-In our case, most of our applications are built with [.NET Core](https://docs.microsoft.com/en-us/dotnet/core/). In that framework, the [`useStaticFiles` middleware](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-3.1#serve-files-inside-of-web-root) does the right thing with `ETag` headers out of the box. It will return a new `ETag` value for changed files, and will return a `304 Not Modified` response when the requested asset is unchanged.
+In our case, most of our applications are built with [.NET Core](https://docs.microsoft.com/en-us/dotnet/core/). In that framework, the [`useStaticFiles` middleware](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-3.1#serve-files-inside-of-web-root) does the right thing with `ETag` headers out of the box. It will return a new `ETag` value for changed files, and will return a `304 Not Modified` response when the requested asset is unchanged. The final key in the process is to set  the `Cache-Control` Header on the response of your static files to `"must-revalidate"`; this tells the browser to check with the server before reloading from the cache.
 
 There are tradeoffs with utilizing the `Etag` header to manage caching:
 
@@ -467,9 +271,9 @@ With these pieces in place, a webpage can load different components from differe
 
 So, we've got consistent cache busting and independent deployments, all under the control of a single team, and that's great, but what about when a Web Component has to change in some fundamental way?
 
-#### What About Breaking Changes?
+#### What About Breaking Changes? - Versioning
 
-Brreaking changes are anything that would cause an error or disruption to our dependents. When talking about Web Components, things that fit into that category are:
+Breaking changes are anything that would cause an error or disruption to our dependents. When talking about Web Components, things that fit into that category are:
 
 * Anything that changes the expected size of the Component in the browser. 
   * This is Component-specific. Some scenarios using Web Components may allow for certain  changes in size without considering them to be breaking.
@@ -479,6 +283,8 @@ Brreaking changes are anything that would cause an error or disruption to our de
 * Changing the shape of the data in emitted events.
 
 In our case, we recommend versioning URLs like you might do in a REST API. So if your original release is something like `/cart/web-components/v1/cart-button.js`, a breaking version can simply be `/cart/web-components/v2/cart-button.js`. Doing this allows a team to release a new, breaking version of a Web Component without automatically breaking downstream clients, and it allows downstream clients to update to the breaking version at their pace.
+
+If your use case includes a single Web Component potentially being used more than once in the same page session, breaking changes may also merit changing the name of the Web Component itself. For example, something like a `<logout-button>` Component may be used in your header nav and may also be present as a button on a profile page. In our case, it would be very likely that the team which has ownership of the navigation menu does not have ownership of the profile page, and so they may not want to update with breaking changes to `<logout-button>` at the same time (depending on team priorities). That being the case, you may need to also version the name of the Web Component. This can be as simple as `<logout-button-v2>`. This way both Web Components can be registered with `window.customElements` without clashing, and those still on the old Component
 
 It's important to note that, following the [`Semantic Versioning model`](https://semver.org/), the URL version  of Micro Frontend Web Components  should only be updated with major versions and on breaking changes. These URL-versioned releases eliminate the ability to release the new change without downstream cooperation. Any dependents will need to manually update the Web Component's URL to get the new version, so releasing new major versions for changes that aren't breaking, or releasing minor or patch versions in the URL will severely hinder a team's flow of continuous improvement.
 
