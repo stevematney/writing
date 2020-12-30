@@ -1,4 +1,6 @@
-# The Big Guide to Web Components Built With React
+# The Big Guide: Micro Frontend Composition with Web Components
+
+## Embedded, Isolated Client-Side Applications Built With React 
 
 #### Table of Contents:
 
@@ -26,7 +28,7 @@
 
 ## Introduction
 
-Our team at Willis Towers Watson wanted to find a way to deploy multiple small applications to the same webpage. In this, we're not talking about multiple _elements_ of a page (like a form or an accordion or some other UI element), but individual applications — encapsulated pieces of business functionality, like a shopping cart, or something that updates household information. Further, we wanted to find an approach that would allow greater than a dozen teams to separately develop, build, and deploy their apps in isolation without having to have multiple gates (other people, teams, etc) in order to get new code into production. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
+Our team at [Willis Towers Watson](https://www.willistowerswatson.com/) wanted to find a way to deploy multiple small applications to exist side-by-side on the same webpage. In this, we're not talking about multiple _elements_ of a page (like a form or an accordion or some other UI element), but individual applications — encapsulated pieces of business functionality, like a shopping cart, or something that updates household information. Further, we wanted to find an approach that would allow greater than a dozen teams to separately develop, build, and deploy their apps in isolation without having to have multiple gates (other people, teams, etc) in order to get new code into production. (This approach is often called [Micro Frontends](https://micro-frontends.org/).)
 
 We researched a lot of different ways of handling this problem, but finally landed on utilizing Web Components as our solution. This allows us to deploy individual, isolated Javascript applications together on a single page without responsibility on other teams to expend a lot of work to integrate those components.
 
