@@ -596,14 +596,14 @@ registered with `window.customElements` without clashing, and those still using
 the old Web Component can continue on using it until they're ready to update.
 
 It's important to note that, following the
-[`Semantic Versioning model`](https://semver.org/), the URL version of Micro
-Frontend Web Components should only be updated with major versions and on
-breaking changes. These URL-versioned releases eliminate the ability to release
-the new change without downstream cooperation. Any dependents will need to
-manually update the Web Component's URL to get the new version, so releasing new
-major versions for changes that aren't breaking, or releasing minor or patch
-versions in the URL will severely hinder a team's flow of continuous
-improvement.
+[`Semantic Versioning model`](https://semver.org/), the URL and tag version of
+Micro Frontend Web Components should only be updated with major versions and on
+breaking changes. These URL-versioned or tag-versioned releases eliminate the
+ability to release the new change without downstream cooperation. Any dependents
+will need to manually update the Web Component's URL and/or HTML tag to get the
+new version, so releasing new major versions for changes that aren't breaking,
+or releasing minor or patch versions in the URL will severely hinder a team's
+flow of continuous improvement.
 
 ## Wrap-Up
 
