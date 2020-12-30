@@ -19,7 +19,7 @@
     * [Intelligently Utilizing Browser Caching](#intelligently-utilizing-browser-caching)
   * [File Naming, Cache-Busting, and Deployment](#file-naming-cache-busting-and-deployment)
     * [Deploying Independently](#deploying-independently)
-    * [What About Breaking Changes? - Versioning](#what-about-breaking-changes--versioning)
+    * [What About Breaking Changes? - Versioning](#what-about-breaking-changes---versioning)
 * [Wrap-Up](#wrap-up)
 * [Appendix A: About Browser Compatibility](#appendix-a-about-browser-compatibility)
 * [Appendix B: Best Practices](#appendix-b-best-practices)
@@ -42,15 +42,15 @@ But if we're using React, isn't some of that portability and isolation already b
 
 ## Why Build Web Components With React? Why Not Just _Use React_?
 
-In a Web Component, you're not limited in the technology you use, so any approach should be feasible, but if you're already using a technology like React, why not simply ship shared React components for different pieces of functionality?
+In a Web Component, you're not limited in the technology you use. Any approach should be feasible, but if you're already using a technology like React, why not simply ship shared React components for different pieces of functionality?
 
 There are a few answers to this question:
 
-1. Shared components within the React system depend on a common set of React functionality. If you're building a component, and you want to use a newer feature, but the global version of React in your system does not support this feature, then you simply can't use it. A Web Component has no need to have a top-down version of React dictating the features it can use. The Web Component can use the version it needs.
+1. Independence: shared components within the React system depend on a common set of React functionality. If you're building a component, and you want to use a newer feature, but the global version of React in your system does not support this feature, then you simply can't use it. A Web Component has no need to have a top-down version of React dictating the features it can use. The Web Component can use the version it needs.
 
-2. Evolvability: the isolation of Web Components allows to you use React or really any other technology you see fit. If your team decides that something better or more fitting has come along for your Web Component, you can change it without worrying about affecting the surrounding page. Or you can build a Web Component without any third party library at all, and it can integrate in any web page easily (even those built with React).
+2. Evolvability: the isolation of Web Components allows to you use React or really any other technology you see fit. If your team decides that something better or more fitting has come along for your Web Component, you can change it without worrying about affecting the surrounding page. Or you can build a Web Component without any third-party library at all, and it can integrate in any web page easily (even those built with React).
 
-3. Possibly the most important answer is deployability. One of the main concerns that a Micro Frontends approach aims to alleviate is a lack of dependency on external teams when deploying an application. If you're using React to piece together your frontend, all of your components need to be up to date at build time. With a Web Component whose source is hosted on an independent server, you can deploy new source code (which we [go into detail about](#file-naming-cache-busting-and-deployment) below), and your downstream dependents will be updated automatically.
+3. Deployability: this is likely the most important answer. One of the main concerns that a Micro Frontends approach aims to alleviate is a lack of dependency on external teams when deploying an application. If you're using React to piece together your frontend, all of your components need to be up to date at build time. With a Web Component whose source is hosted on an independent server, you can deploy new source code (which we [go into detail about](#file-naming-cache-busting-and-deployment) below), and your downstream dependents will be updated automatically.
 
 There are some limitations and hurdles when it comes to using React in Web Components, and some questions we wanted to answer as we approached the idea  Let's talk about those. The first is the problem of lost functionality.
 
@@ -133,7 +133,7 @@ Styles in Web Components have some unique constraints:
 
 * Styles specific to the Component must be contained within the Component itself
 * `<link>` tags do not work within Web Components. Styles for the Component must be in `<style>` tags.
-* `@font-face`s must be loaded on the global document, and cannot be loaded from within a Web Component.
+* `@font-face` rules must be loaded on the global document, and cannot be loaded from within a Web Component.
 
 There are other concerns, as well, when dealing with our particular build process. Most of our teams use a very common set of tools in the React community: webpack, Babel, and styled-components. These tools make bundling apps for the web very easy, but the above styling constraints bring an extra level of complexity. By default, styled-components applies your styles to the `<head>` of your HTML, but we need them applied inside the Shadow DOM.
 
@@ -210,11 +210,11 @@ This begets two problems, though, the first being that Web Components don't have
 
 #### Javascript Isolation
 
-This is a glaring problem: Web Components are very isolated in every sense _except for in JavaScript_. The `window` and `document` in a Web Component are the same `window` and `document` in the surrounding page. So any third party dependency would either need to be externalized to the `window`, causing us to have to make a top-down decision about dependencies and versions that our Web Components can rely on, or we'd need some way to isolate these external dependencies without simply packaging them into our bundles.
+This is a glaring problem: Web Components are very isolated in every sense _except for in JavaScript_. The `window` and `document` in a Web Component are the same `window` and `document` in the surrounding page. So any third-party dependency would either need to be externalized to the `window`, causing us to have to make a top-down decision about dependencies and versions that our Web Components can rely on, or we'd need some way to isolate these external dependencies without simply packaging them into our bundles.
 
-We much preferred the second option, but couldn't find a way to do it, so we built one. Our teams are all using webpack for their build, so we wrote a webpack plugin to wrap the bundles in a closure, and include any [`externals`](https://webpack.js.org/configuration/externals/) within the closure. This allows our application to refer to the `externals` as global dependencies, without the need for those externals to actually be on the global context. The resulting package is called the [`isolated-externals-plugin`](https://github.com/WTW-IM/isolated-externals-plugin). Utilizing this plugin allows us to load a UMD package more than once on the same page without polluting the `window` object (so long as those UMD bundles refer to `this` and not the `window` directly).
+We much preferred the second option, but couldn't find a way to do it, so we built one. Our teams are all using webpack for their build, so we wrote a webpack plugin to wrap the bundles in a closure, and include any [`externals`](https://webpack.js.org/configuration/externals/) within the closure. This allows our application to refer to the `externals` as global dependencies, without the need for those externals to actually be on the global context. The resulting package is called the [`isolated-externals-plugin`](https://github.com/WTW-IM/isolated-externals-plugin). Utilizing this plugin allows us to load a UMD package more than once on the same page without polluting the `window` object (so long as those UMD bundles refer to `this` and not the `window` directly). The `isolated-externals-plugin` also provides some behavior which ensures that resources at the same URL will only be loaded once over the wire, even if they are not already cached.
 
-There are trade-offs here, the primary one being that the resulting JavaScript heap will include these dependencies more than once, but remember — we'd run into that same problem if we were bundling our dependencies into our applications anyway. This way, we end up having those dependencies in the heap more than once, but we only need to load them over the wire a single time.
+There are trade-offs here, the primary one being that the resulting JavaScript heap will include these dependencies more than once. That's true, but we'd run into that same problem if we were bundling our dependencies into our applications anyway. This way, we do end up having those dependencies in the heap more than once, but we only need to load them over the wire a single time.
 
 The second problem uncovered by the effort to isolate our external dependencies is a particular one. What if one Web Component were to refer to an external dependency at one minor or patch version, and another referred to the same dependency at the same major version, but at a different minor or patch version? We'd end up transferring two packages over the wire, but probably unnecessarily.
 
@@ -231,23 +231,24 @@ With a solution for caching our external dependencies in place, we could focus o
 
 ### File Naming, Cache-Busting, and Deployment
 
-The traditional way of ensuring that browsers load the newest version of a javascript application is to append a new hash onto the filename with each deployment (so `main-abc123.js` becomes `main-xyz789.js`), and to set `Cache-Control` headers for these files to keep assets for a long time. For our case, we don't want downstream teams to know about a new hash because we don't want teams to need to be aware that a new version of a component has been released. For us, adding a hash to the filename would not work.
+The traditional way of ensuring that browsers load the newest version of a javascript application is to append a new hash onto the filename with each deployment (so `main-abc123.js` becomes `main-xyz789.js`), and to set `Cache-Control` Headers for these files to keep assets for a long time. For our case, we don't want downstream teams to know about a new hash because we don't want teams to need to be aware that a new version of a component has been released. For us, adding a hash to the filename would not work.
 
 Instead, we decided to have our Components delivered with static file names (something like `shopping-component.js`), and we would rely on the [`ETag` Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag) and the built-in browser behaviors around it to manage cache busting.
 
-To allow `ETag` headers to work, the server that delivers the static files simply needs to generate an `ETag` value for each new version of the file to compare against. When the browser requests the static resource, it should send that `ETag` Header and value on the response with the content. When the browser sends a request for a file with an `ETag` Header value that matches the file on the server, the server returns a `304 Not Modified` response, causing the browser to fall back to its cached resource. When the `ETag` values are mismatched, the server will send back the new version of the file along with a `200 OK` response.
+To allow `ETag` Headers to work, the server that delivers the static files simply needs to generate an `ETag` value for each new version of the file to compare against. When the browser requests the static resource, it should send that `ETag` Header and value on the response with the content. When the browser sends a request for a file with an `ETag` Header value that matches the file on the server, the server returns a `304 Not Modified` response, causing the browser to fall back to its cached resource. When the `ETag` values are mismatched, the server will send back the new version of the file along with a `200 OK` response.
 
-In our case, most of our applications are built with [.NET Core](https://docs.microsoft.com/en-us/dotnet/core/). In that framework, the [`useStaticFiles` middleware](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-3.1#serve-files-inside-of-web-root) does the right thing with `ETag` headers out of the box. It will return a new `ETag` value for changed files, and will return a `304 Not Modified` response when the requested asset is unchanged. The final key in the process is to set  the `Cache-Control` Header on the response of your static files to `"must-revalidate"`; this tells the browser to check with the server before reloading from the cache.
+In our case, most of our applications are built with [.NET Core](https://docs.microsoft.com/en-us/dotnet/core/). In that framework, the [`useStaticFiles` middleware](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files?view=aspnetcore-3.1#serve-files-inside-of-web-root) does the right thing with `ETag` headers out of the box. It will return a new `ETag` value for changed files, and will return a `304 Not Modified` response when the requested asset is unchanged. 
 
-There are tradeoffs with utilizing the `Etag` header to manage caching:
+There are tradeoffs with utilizing the `Etag` Header to manage caching:
 
 * The browser has to make a request to the server to confirm the `ETag` value.
-* There isn't a one-size solution to utilize `Cache-Control` headers.
+* There isn't a one-size solution to utilize `Cache-Control` Headers.
 
 There are some mitigating factors there, though:
 
 * The size of the 304 response is a few hundred bytes, which is typically minuscule compared to your actual bundle size (generally some tens-to-hundreds of kilobytes).
-* If you're delivering a static file where you have a good understanding of the change rate (do we deploy new code every day, week, month, etc?), then you can set up `Cache-Control` headers to meet the needs of your specific case.
+* If you're delivering a static file where you have a good understanding of the change rate, then you can set up `Cache-Control` Headers to meet the needs of your specific case. (That is, you know you deploy new code about every day, week, month, etc.)
+  * If you want to validate the `ETag` Header every time your script is loaded, set the `Cache-Control` Header on the response of your static files to `"must-revalidate"`; this tells the browser to always check with the server before reloading from the cache.
 
 Understanding how we can deploy these files with a static name and consistent cache busting is really good, but in itself, it's not enough to give us the independence for teams that we're looking for. For that, teams need to be able to deploy their applications independently, without the need to notify other teams of a change, or the need step on the toes of other teams by deploying through the same deployment pipeline.
 
@@ -282,11 +283,11 @@ Breaking changes are anything that would cause an error or disruption to our dep
 * Changing the names of emitted events.
 * Changing the shape of the data in emitted events.
 
-In our case, we recommend versioning URLs like you might do in a REST API. So if your original release is something like `/cart/web-components/v1/cart-button.js`, a breaking version can simply be `/cart/web-components/v2/cart-button.js`. Doing this allows a team to release a new, breaking version of a Web Component without automatically breaking downstream clients, and it allows downstream clients to update to the breaking version at their pace.
+In our case, we recommend versioning URLs like you might do in a REST API. So if your original release is something like `/cart/web-components/v1/cart-button.js`, a breaking version can simply be `/cart/web-components/v2/cart-button.js`. Doing this allows a team to release a new, breaking version of a Web Component without automatically breaking downstream clients. Conversely, it also allows downstream clients to update to the breaking version at their pace.
 
-If your use case includes a single Web Component potentially being used more than once in the same page session, breaking changes may also merit changing the name of the Web Component itself. For example, something like a `<logout-button>` Component may be used in your header nav and may also be present as a button on a profile page. In our case, it would be very likely that the team which has ownership of the navigation menu does not have ownership of the profile page, and so they may not want to update with breaking changes to `<logout-button>` at the same time (depending on team priorities). That being the case, you may need to also version the name of the Web Component. This can be as simple as `<logout-button-v2>`. This way both Web Components can be registered with `window.customElements` without clashing, and those still on the old Component
+If your use case includes a single Web Component with the potential to be used more than once in the same page session, breaking changes may also merit changing the name of the Web Component itself. For example, something like a `<logout-button>` Component may be used in your header nav and may also be present as a button on a profile page. In our case, it would be very likely that the team which has ownership of the navigation menu does not have ownership of the profile page, and so they may not want to update with breaking changes to `<logout-button>` at the same time (depending on team priorities). That being the case, you may need to also version the name of the Web Component. This can be as simple as `<logout-button-v2>`. This way both Web Components can be registered with `window.customElements` without clashing, and those still using the old Web Component can continue on using it until they're ready to update.
 
-It's important to note that, following the [`Semantic Versioning model`](https://semver.org/), the URL version  of Micro Frontend Web Components  should only be updated with major versions and on breaking changes. These URL-versioned releases eliminate the ability to release the new change without downstream cooperation. Any dependents will need to manually update the Web Component's URL to get the new version, so releasing new major versions for changes that aren't breaking, or releasing minor or patch versions in the URL will severely hinder a team's flow of continuous improvement.
+It's important to note that, following the [`Semantic Versioning model`](https://semver.org/), the URL version of Micro Frontend Web Components  should only be updated with major versions and on breaking changes. These URL-versioned releases eliminate the ability to release the new change without downstream cooperation. Any dependents will need to manually update the Web Component's URL to get the new version, so releasing new major versions for changes that aren't breaking, or releasing minor or patch versions in the URL will severely hinder a team's flow of continuous improvement.
 
 ## Wrap-Up
 
