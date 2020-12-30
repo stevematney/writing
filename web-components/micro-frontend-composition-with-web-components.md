@@ -29,8 +29,8 @@
 ## Introduction
 
 Our team at [Willis Towers Watson](https://www.willistowerswatson.com/) wanted
-to find a way to deploy multiple small applications to exist side-by-side on the
-same webpage. In this, we're not talking about multiple _elements_ of a page
+to find a way to deploy multiple small applications that exist side-by-side on
+the same webpage. In this, we're not talking about multiple _elements_ of a page
 (like a form or an accordion or some other UI element), but individual
 applications — encapsulated pieces of business functionality, like a shopping
 cart, or something that updates household information. Further, we wanted to
