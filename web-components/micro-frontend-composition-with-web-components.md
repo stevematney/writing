@@ -137,7 +137,7 @@ This was our first consideration, as it is the most clear problem when building
 Web Components with React. The next problem we wanted to solve was: how do we
 render HTML Children within a Web Component?
 
-> :rotating*light: React 17 should solve the issue described above. You may
+> 🚨 React 17 should solve the issue described above. You may
 > \_not* want to use `ReactHTMLElement` if you're on React 17. We plan shortly
 > to release an update that will include some of the nice-to-haves of
 > `ReactHTMLElement`, but relying on React 17 to solve the event targeting
