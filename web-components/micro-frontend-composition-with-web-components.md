@@ -242,8 +242,6 @@ our next challenge: styles.
 Styles in Web Components have some unique constraints:
 
 - Styles specific to the Component must be contained within the Component itself
-- `<link>` tags do not work within Web Components. Styles for the Component must
-  be in `<style>` tags.
 - `@font-face` rules must be loaded on the global document, and cannot be loaded
   from within a Web Component.
 
